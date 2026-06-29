@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KARABSKY LAB — Системы роста</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════════════ */
+:root{
+  --bg:      #060810;
+  --bg-card: rgba(255,255,255,.028);
+  --bg-h:    rgba(255,255,255,.055);
+  --bd:      rgba(255,255,255,.07);
+  --bd-h:    rgba(255,255,255,.18);
+  --ink:     #EDF2FF;
+  --muted:   #4E5A72;
+  --dim:     #2A3147;
+  /* iridescent palette */
+  --e:  #0CF4A4;   /* emerald    */
+  --t:  #08D4EC;   /* turquoise  */
+  --s:  #C8DEFF;   /* silver-blue*/
+  --iris: linear-gradient(90deg,#0CF4A4,#08D4EC,#C8DEFF,#0CF4A4);
+  --r: 20px;
+  --gap: 12px;
+}
+/* ═══ RESET ═══ */
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+::selection{background:rgba(8,212,236,.22);}
+::-webkit-scrollbar{width:2px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+
+/* ═══ IRIDESCENT ═══ */
+@keyframes iris{
+  0%  {background-position:0% 50%;}
+  50% {background-position:100% 50%;}
+  100%{background-position:0% 50%;}
+}
+.iris{
+  background:linear-gradient(90deg,#0CF4A4,#08D4EC,#C8DEFF,#0CF4A4);
+  background-size:300% 100%;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:iris 5s ease infinite;
+}
+.iris-slow{animation-duration:8s;}
+.iris-border{
+  border:1px solid transparent;
+  background:
+    linear-gradient(var(--bg-card),var(--bg-card)) padding-box,
+    linear-gradient(135deg,#0CF4A4,#08D4EC,#C8DEFF,#0CF4A4) border-box;
+  background-size:300%;
+  animation:iris 7s ease infinite;
+}
+
+/* ═══ PROGRESS ═══ */
+#pgb{
+  position:fixed;top:0;left:0;height:2px;z-index:999;
+  background:linear-gradient(90deg,#0CF4A4,#08D4EC,#C8DEFF);
+  box-shadow:0 0 10px rgba(8,212,236,.6);
+  transition:width .1s linear;
+  pointer-events:none;
+}
+
+/* ═══ CURSOR ═══ */
+#cd,#cr{position:fixed;pointer-events:none;z-index:9999;border-radius:50%;transform:translate(-50%,-50%);}
+#cd{width:6px;height:6px;background:rgba(8,212,236,.9);box-shadow:0 0 8px rgba(8,212,236,.6);}
+#cr{width:28px;height:28px;border:1px solid rgba(8,212,236,.3);}
+@media(hover:hover) and (pointer:fine){*{cursor:none!important;}}
+@media not all and ((hover:hover) and (pointer:fine)){#cd,#cr{display:none;}}
+
+/* ═══ NAV ═══ */
+.nav{
+  position:fixed;top:0;left:0;right:0;height:54px;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px;
+  transition:background .4s,backdrop-filter .4s;
+}
+.nav.scrolled{
+  background:rgba(6,8,16,.85);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--bd);
+}
+.nav-logo{
+  font-family:'JetBrains Mono',monospace;
+  font-size:14px;font-weight:500;letter-spacing:.06em;
+  display:flex;align-items:center;gap:6px;
+}
+.nav-logo .dot{
+  width:8px;height:8px;border-radius:50%;
+  background:linear-gradient(135deg,#0CF4A4,#08D4EC);
+  animation:iris 4s ease infinite;
+}
+.nav-links{display:flex;gap:6px;}
+.nav-a{
+  padding:7px 14px;border-radius:999px;
+  font-size:13px;color:var(--muted);
+  transition:color .2s,background .2s;
+}
+.nav-a:hover{color:var(--ink);background:var(--bg-card);}
+.nav-cta{
+  padding:9px 22px;border-radius:999px;
+  border:1px solid rgba(8,212,236,.35);
+  font-size:13px;font-weight:500;
+  background:transparent;color:var(--e);
+  transition:background .25s,border-color .25s,box-shadow .25s;
+  will-change:transform;
+}
+.nav-cta:hover{
+  background:rgba(8,212,236,.08);
+  border-color:rgba(8,212,236,.6);
+  box-shadow:0 0 24px rgba(8,212,236,.2);
+}
+
+/* ═══ HERO ═══ */
+.hero{
+  min-height:100dvh;
+  display:flex;flex-direction:column;
+  justify-content:center;align-items:center;
+  text-align:center;padding:80px 24px 60px;
+  position:relative;overflow:hidden;
+}
+.hero-grid-bg{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(8,212,236,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(8,212,236,.04) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse 80% 70% at 50% 40%,black,transparent);
+}
+.hero-glow{
+  position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 50% at 50% 45%,rgba(12,244,164,.05),transparent);
+}
+.hero-label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;font-weight:500;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:28px;
+  display:flex;align-items:center;gap:10px;
+  opacity:0;
+}
+.hero-label::before,.hero-label::after{content:'';width:28px;height:1px;background:var(--dim);}
+.hero-h{
+  font-size:clamp(3rem,8vw,8.5rem);
+  font-weight:900;letter-spacing:-.055em;line-height:.9;
+  margin-bottom:24px;
+  opacity:0;
+}
+.hero-sub{
+  font-size:clamp(15px,1.6vw,18px);color:var(--muted);
+  max-width:560px;line-height:1.7;font-weight:400;
+  margin-bottom:40px;opacity:0;
+}
+.hero-btns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;opacity:0;}
+.btn-primary{
+  padding:14px 32px;border-radius:999px;
+  background:linear-gradient(135deg,#0CF4A4,#08D4EC);
+  color:#050810;font-size:15px;font-weight:700;border:none;
+  box-shadow:0 0 40px rgba(12,244,164,.3);
+  transition:transform .2s,box-shadow .2s;will-change:transform;
+}
+.btn-primary:hover{transform:scale(1.03);box-shadow:0 0 60px rgba(12,244,164,.5);}
+.btn-sec{
+  padding:14px 32px;border-radius:999px;
+  background:var(--bg-card);color:var(--ink);
+  font-size:15px;font-weight:500;
+  border:1px solid var(--bd-h);
+  transition:background .25s,transform .2s;will-change:transform;
+}
+.btn-sec:hover{background:var(--bg-h);transform:scale(1.02);}
+.hero-stats{
+  display:flex;flex-wrap:wrap;gap:40px;justify-content:center;
+  margin-top:60px;
+  border-top:1px solid var(--bd);padding-top:40px;
+  opacity:0;
+}
+.hero-stat{}
+.hero-stat .v{
+  font-size:clamp(2rem,3.5vw,3rem);font-weight:800;
+  letter-spacing:-.04em;display:block;margin-bottom:4px;
+}
+.hero-stat .l{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);
+}
+
+/* ═══ SECTION HEADER ═══ */
+.sec-head{
+  max-width:1260px;margin:0 auto;padding:0 24px;
+  margin-bottom:28px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.sec-eyebrow{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;font-weight:500;letter-spacing:.26em;text-transform:uppercase;
+  color:var(--muted);display:flex;align-items:center;gap:10px;
+}
+.sec-eyebrow::before{content:'';width:18px;height:1px;background:currentColor;}
+.sec-h{
+  font-size:clamp(2rem,4vw,3.6rem);
+  font-weight:800;letter-spacing:-.04em;line-height:.98;
+}
+
+/* ═══ BENTO GRID ═══ */
+.bento-wrap{
+  max-width:1260px;margin:0 auto;
+  padding:0 24px 80px;
+}
+.bento{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:var(--gap);
+}
+.bento-5{grid-template-columns:repeat(5,1fr);}
+
+/* card base */
+.card{
+  background:var(--bg-card);
+  border:1px solid var(--bd);
+  border-radius:var(--r);
+  padding:24px;
+  position:relative;overflow:hidden;
+  transform-style:preserve-3d;
+  will-change:transform,opacity;
+  transition:background .3s,border-color .3s;
+}
+.card:hover{background:var(--bg-h);border-color:var(--bd-h);}
+/* iridescent glow on hover */
+.card::after{
+  content:'';position:absolute;inset:-1px;border-radius:inherit;
+  background:linear-gradient(135deg,#0CF4A4,#08D4EC,#C8DEFF,#0CF4A4);
+  background-size:300%;opacity:0;
+  animation:iris 6s ease infinite;
+  z-index:-1;border-radius:var(--r);
+  transition:opacity .35s;
+}
+.card:hover::after{opacity:.25;}
+
+/* spans */
+.c11{grid-column:span 1;grid-row:span 1;}
+.c21{grid-column:span 2;grid-row:span 1;}
+.c31{grid-column:span 3;grid-row:span 1;}
+.c41{grid-column:span 4;grid-row:span 1;}
+.c12{grid-column:span 1;grid-row:span 2;}
+.c22{grid-column:span 2;grid-row:span 2;}
+.c32{grid-column:span 3;grid-row:span 2;}
+.c42{grid-column:span 4;grid-row:span 2;}
+
+/* card label */
+.clabel{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;color:var(--muted);letter-spacing:.22em;
+  text-transform:uppercase;margin-bottom:16px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.cn{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;color:rgba(8,212,236,.7);
+  letter-spacing:.18em;text-transform:uppercase;
+  margin-bottom:14px;
+}
+.ctitle{
+  font-size:clamp(1.1rem,2vw,1.5rem);
+  font-weight:700;letter-spacing:-.03em;line-height:1.2;
+  margin-bottom:10px;
+}
+.cdesc{font-size:14px;color:var(--muted);line-height:1.65;}
+.ctags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;}
+.ctag{
+  padding:4px 10px;border-radius:999px;
+  font-size:11px;color:var(--muted);
+  border:1px solid var(--bd);background:rgba(255,255,255,.02);
+}
+
+/* big stat card */
+.cstat{
+  display:flex;flex-direction:column;
+  justify-content:flex-end;height:100%;
+}
+.cstat .big{
+  font-size:clamp(3.5rem,6vw,6rem);
+  font-weight:900;letter-spacing:-.06em;line-height:.85;
+  margin-bottom:8px;
+}
+.cstat .lbl{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);
+}
+
+/* intro/overview cards */
+.card-hero-arch{
+  display:flex;flex-direction:column;justify-content:space-between;
+  min-height:280px;
+}
+.card-hero-arch .cht{
+  font-size:clamp(1.6rem,3vw,2.8rem);
+  font-weight:800;letter-spacing:-.04em;line-height:1.05;
+  margin-bottom:12px;
+}
+.card-hero-arch .cdesc{max-width:380px;}
+
+/* error/signal card */
+.card-err .code{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;color:#F87171;letter-spacing:.14em;
+  margin-bottom:14px;
+  display:flex;align-items:center;gap:7px;
+}
+.card-err .code::before{
+  content:'';width:5px;height:5px;border-radius:50%;
+  background:#F87171;flex-shrink:0;
+  animation:blink 1.8s ease-in-out infinite;
+}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.2;}}
+
+/* method cards */
+.card-method{
+  display:flex;flex-direction:column;justify-content:space-between;
+  min-height:180px;
+}
+.card-method .step-n{
+  font-family:'JetBrains Mono',monospace;
+  font-size:clamp(3rem,6vw,5.5rem);
+  font-weight:900;letter-spacing:-.06em;
+  color:rgba(255,255,255,.04);
+  line-height:1;margin-bottom:0;
+}
+
+/* role cards */
+.card-role{min-height:140px;display:flex;flex-direction:column;gap:10px;}
+.role-glyph{
+  width:36px;height:36px;border-radius:8px;
+  background:rgba(8,212,236,.06);
+  border:1px solid rgba(8,212,236,.15);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:var(--e);letter-spacing:.1em;
+}
+.role-title{font-size:14px;font-weight:600;}
+.role-area{font-size:12px;color:var(--muted);}
+
+/* CTA card */
+.card-cta{
+  background:linear-gradient(135deg,rgba(12,244,164,.07),rgba(8,212,236,.07));
+  border-color:rgba(8,212,236,.25)!important;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  text-align:center;gap:20px;
+  min-height:200px;
+}
+.card-cta h3{
+  font-size:clamp(1.4rem,2.5vw,2rem);
+  font-weight:800;letter-spacing:-.03em;
+}
+.card-cta p{font-size:15px;color:var(--muted);max-width:340px;}
+
+/* form card */
+.card-form{background:rgba(255,255,255,.02);}
+.ff{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+.ff label{font-size:11px;color:var(--muted);letter-spacing:.04em;}
+.ff input,.ff textarea{
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--bd);
+  border-radius:10px;padding:11px 14px;
+  font-size:14px;color:var(--ink);outline:none;
+  font-family:inherit;resize:none;
+  transition:border-color .25s,box-shadow .25s;
+}
+.ff input:focus,.ff textarea:focus{
+  border-color:rgba(8,212,236,.5);
+  box-shadow:0 0 0 3px rgba(8,212,236,.07);
+}
+.ff input::placeholder,.ff textarea::placeholder{color:var(--dim);}
+.btn-submit{
+  width:100%;padding:13px;border-radius:12px;
+  background:linear-gradient(135deg,#0CF4A4,#08D4EC);
+  color:#050810;font-size:14px;font-weight:700;border:none;
+  transition:box-shadow .25s,transform .15s;
+  will-change:transform;
+}
+.btn-submit:hover{box-shadow:0 0 40px rgba(8,212,236,.35);transform:scale(1.01);}
+
+/* mini chart bar */
+.mini-chart{
+  display:flex;align-items:flex-end;gap:3px;height:40px;
+  margin-top:auto;padding-top:16px;
+}
+.mini-chart .b{
+  flex:1;border-radius:3px 3px 0 0;
+  background:linear-gradient(to top,rgba(12,244,164,.4),rgba(8,212,236,.2));
+  transition:height .5s ease;
+}
+
+/* ═══ FOOTER ═══ */
+footer{
+  border-top:1px solid var(--bd);
+  padding:40px 0 24px;
+}
+.foot{
+  max-width:1260px;margin:0 auto;padding:0 24px;
+  display:flex;justify-content:space-between;align-items:flex-end;
+  flex-wrap:wrap;gap:16px;
+}
+.foot-logo{
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;font-weight:500;letter-spacing:.06em;
+}
+.foot-links{display:flex;gap:20px;font-size:13px;color:var(--muted);}
+.foot-links a:hover{color:var(--ink);}
+.foot-copy{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
+}
+
+/* ═══ SCROLL REVEAL (initial state) ═══ */
+.rv{opacity:0;transform:translateY(28px);}
+
+/* ═══ SECTION SPACING ═══ */
+.section{padding-top:80px;}
+.section:first-child{padding-top:0;}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:1024px){
+  .bento{grid-template-columns:repeat(3,1fr);}
+  .bento-5{grid-template-columns:repeat(3,1fr);}
+  .c41,.c42{grid-column:span 3;}
+  .c31,.c32{grid-column:span 3;}
+}
+@media(max-width:768px){
+  .bento,.bento-5{grid-template-columns:repeat(2,1fr);}
+  .c11,.c12,.c21,.c22,.c31,.c32,.c41,.c42{grid-column:span 2!important;grid-row:span 1!important;}
+  .nav-links{display:none;}
+}
+@media(max-width:480px){
+  .bento,.bento-5{grid-template-columns:1fr;}
+  .c11,.c12,.c21,.c22,.c31,.c32,.c41,.c42{grid-column:span 1!important;}
+}
+
+/* hero canvas z layering */
+.hero-label,.hero-h,.hero-sub,.hero-btns,.hero-stats{position:relative;z-index:1;}
+
+/* clip-path card reveal initial */
+.card.rv{
+  clip-path:inset(0 0 100% 0);
+  transform:translateY(0) !important;
+}
+/* word-split */
+.ww{overflow:hidden;display:inline-block;}
+.wd{display:inline-block;transform:translateY(102%);opacity:0;}
+/* pinned section reveal */
+.sec-reveal{
+  position:sticky;top:0;height:100vh;
+  display:flex;flex-direction:column;
+  justify-content:center;align-items:center;
+  text-align:center;
+  overflow:hidden;
+  pointer-events:none;
+  z-index:1;
+}
+.sec-reveal-wrap{
+  position:relative;
+}
+/* section reveal spacer */
+.rev-spacer{height:50vh;}
+/* entrance line */
+.ent-line{
+  width:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--e),var(--t),var(--s),transparent);
+  margin:24px auto;
+  will-change:width;
+}
+
+</style>
+</head>
+<body>
+<div id="pgb"></div>
+<div id="cd"></div>
+<div id="cr"></div>
+<!-- atmosphere -->
+<canvas id="atm-cv" style="position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;"></canvas>
+
+<!-- ═══ NAV ═══ -->
+<header class="nav" id="nav">
+  <div class="nav-logo">
+    <div class="dot"></div>
+    KARABSKY<span style="color:var(--muted);margin-left:3px">LAB</span>
+  </div>
+  <nav class="nav-links">
+    <a class="nav-a" href="#arch">Система</a>
+    <a class="nav-a" href="#ai">AI</a>
+    <a class="nav-a" href="#cases">Кейсы</a>
+    <a class="nav-a" href="#team">Команда</a>
+  </nav>
+  <button class="nav-cta" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Диагностика →</button>
+</header>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <canvas id="hero-cv" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;"></canvas>
+  <div class="hero-glow"></div>
+  <div class="hero-label">Маркетинговое агентство · Данные · AI</div>
+  <h1 class="hero-h">
+    Маркетинг,<br>данные и <span class="iris">AI</span><br>как система
+  </h1>
+  <p class="hero-sub">От упаковки и позиционирования до автоматизации привлечения, обработки и удержания клиентов — одна команда, единая логика роста.</p>
+  <div class="hero-btns">
+    <button class="btn-primary" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Получить диагностику</button>
+    <button class="btn-sec" onclick="document.getElementById('arch').scrollIntoView({behavior:'smooth'})">Как работает система</button>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat"><span class="v iris">+180%</span><span class="l">заявок</span></div>
+    <div class="hero-stat"><span class="v iris iris-slow">×2.4</span><span class="l">конверсия</span></div>
+    <div class="hero-stat"><span class="v iris">+220%</span><span class="l">продаж</span></div>
+    <div class="hero-stat"><span class="v" style="color:var(--ink)">−42%</span><span class="l">стоим. лида</span></div>
+  </div>
+</section>
+
+<!-- ═══ ARCHITECTURE ═══ -->
+<div class="section" id="arch">
+<div class="sec-head rv">
+  <div class="sec-eyebrow">Архитектура системы роста</div>
+  <h2 class="sec-h">Реактор роста:<br><span class="iris">6 модулей</span></h2>
+</div>
+<div class="bento-wrap">
+<div class="bento">
+
+  <!-- Overview big card -->
+  <div class="card c22 card-hero-arch rv">
+    <div>
+      <div class="cn">Система · 01–06</div>
+      <div class="cht">Мы не начинаем с рекламы.</div>
+      <p class="cdesc">Сначала проектируем стратегию, затем собираем систему из взаимосвязанных модулей. Каждый элемент работает на общий результат.</p>
+    </div>
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:20px;">
+        <div style="flex:1;height:2px;background:linear-gradient(90deg,var(--e),var(--t),var(--s));border-radius:2px;animation:iris 5s ease infinite;background-size:300%;"></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.18em;">6 МОДУЛЕЙ</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Module 01 -->
+  <div class="card c11 rv">
+    <div class="cn">01 — Стратегия</div>
+    <div class="ctitle">Маркетинговая стратегия</div>
+    <p class="cdesc" style="font-size:13px">Исследование рынка, ЦА, конкурентов. Позиционирование, УТП, офферы.</p>
+    <div class="ctags"><span class="ctag">ЦА</span><span class="ctag">УТП</span><span class="ctag">офферы</span></div>
+  </div>
+
+  <!-- Module 02 -->
+  <div class="card c11 rv">
+    <div class="cn">02 — Упаковка</div>
+    <div class="ctitle">Брендинг и сайт</div>
+    <p class="cdesc" style="font-size:13px">Ребрендинг, логотип, фирменный стиль, сайт. Визуальная оболочка, которая продаёт.</p>
+    <div class="ctags"><span class="ctag">логотип</span><span class="ctag">сайт</span></div>
+  </div>
+
+  <!-- Module 03 -->
+  <div class="card c11 rv">
+    <div class="cn">03 — Трафик</div>
+    <div class="ctitle">Привлечение</div>
+    <p class="cdesc" style="font-size:13px">Контекст, SEO, таргет, Telegram, VK. Под экономику бизнеса.</p>
+    <div class="ctags"><span class="ctag">контекст</span><span class="ctag">SEO</span><span class="ctag">Telegram</span></div>
+  </div>
+
+  <!-- Module 04 -->
+  <div class="card c11 rv">
+    <div class="cn">04 — Аналитика</div>
+    <div class="ctitle">CRM и оцифровка</div>
+    <p class="cdesc" style="font-size:13px">CRM, сквозная аналитика, дашборды, отчётность. Путь клиента — под контролем.</p>
+    <div class="ctags"><span class="ctag">CRM</span><span class="ctag">дашборды</span></div>
+  </div>
+
+  <!-- Module 05 -->
+  <div class="card c21 rv">
+    <div class="cn">05 — Автоматизация</div>
+    <div class="ctitle">AI и автоворонки</div>
+    <p class="cdesc">Чат-боты, автоворонки, AI-продавцы и автоматизация бизнес-процессов для ускорения обработки клиентов.</p>
+    <div class="ctags"><span class="ctag">чат-боты</span><span class="ctag">автоворонки</span><span class="ctag">AI-продавцы</span></div>
+  </div>
+
+  <!-- Module 06 -->
+  <div class="card c21 rv">
+    <div class="cn">06 — Масштаб</div>
+    <div class="ctitle">Масштабирование</div>
+    <p class="cdesc">Усиливаем то, что работает: оптимизируем каналы, тестируем гипотезы, масштабируем связки.</p>
+    <div class="ctags"><span class="ctag">гипотезы</span><span class="ctag">оптимизация</span><span class="ctag">рост</span></div>
+  </div>
+
+</div>
+</div>
+</div>
+
+<!-- ═══ AI LAYER ═══ -->
+<div class="section" id="ai">
+<div class="sec-head rv">
+  <div class="sec-eyebrow">AI Integrated</div>
+  <h2 class="sec-h"><span class="iris">ИИ усиливает</span><br>каждый этап</h2>
+</div>
+<div class="bento-wrap">
+<div class="bento">
+
+  <!-- AI intro -->
+  <div class="card c31 rv" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;min-height:100px;">
+    <p style="font-size:clamp(15px,1.6vw,18px);color:var(--muted);max-width:620px;line-height:1.6;">
+      Мы интегрируем AI не как декоративную технологию, а как <span style="color:var(--ink);font-weight:600;">рабочий слой</span> внутри маркетинга, продаж и операционных процессов.
+    </p>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;">AI · integrated</div>
+  </div>
+
+  <!-- Stat +180% -->
+  <div class="card c11 rv" style="background:rgba(12,244,164,.04);border-color:rgba(12,244,164,.15);">
+    <div class="cstat">
+      <div class="big iris">+180%</div>
+      <div class="lbl">заявок e-commerce</div>
+    </div>
+  </div>
+
+  <!-- AI 01 -->
+  <div class="card c11 rv">
+    <div class="cn">AI · 01</div>
+    <div class="ctitle" style="font-size:1rem;">AI-анализ аудитории</div>
+    <p class="cdesc" style="font-size:13px;">Скрытые сегменты и точки входа через глубокий анализ данных.</p>
+  </div>
+
+  <!-- AI 02 -->
+  <div class="card c11 rv">
+    <div class="cn">AI · 02</div>
+    <div class="ctitle" style="font-size:1rem;">AI-продавцы 24/7</div>
+    <p class="cdesc" style="font-size:13px;">Автоматически обрабатывают входящие запросы и сопровождают клиента.</p>
+  </div>
+
+  <!-- Stat ×2.4 -->
+  <div class="card c11 rv" style="background:rgba(8,212,236,.04);border-color:rgba(8,212,236,.15);">
+    <div class="cstat">
+      <div class="big iris iris-slow">×2.4</div>
+      <div class="lbl">конверсия недвижимость</div>
+    </div>
+  </div>
+
+  <!-- AI 03 -->
+  <div class="card c11 rv">
+    <div class="cn">AI · 03</div>
+    <div class="ctitle" style="font-size:1rem;">Автообработка заявок</div>
+    <p class="cdesc" style="font-size:13px;">Автоворонки и интеграции, работают без участия менеджера.</p>
+  </div>
+
+  <!-- AI 04 -->
+  <div class="card c11 rv">
+    <div class="cn">AI · 04</div>
+    <div class="ctitle" style="font-size:1rem;">Генерация креативов</div>
+    <p class="cdesc" style="font-size:13px;">AI создаёт и тестирует тысячи вариантов быстро и без затрат.</p>
+  </div>
+
+  <!-- AI 05 -->
+  <div class="card c11 rv">
+    <div class="cn">AI · 05</div>
+    <div class="ctitle" style="font-size:1rem;">Персонализация</div>
+    <p class="cdesc" style="font-size:13px;">Каждый клиент получает нужное сообщение в нужный момент.</p>
+  </div>
+
+  <!-- Stat +220% -->
+  <div class="card c11 rv" style="background:rgba(200,222,255,.04);border-color:rgba(200,222,255,.12);">
+    <div class="cstat">
+      <div class="big iris" style="font-size:clamp(2.5rem,5vw,5rem);">+220%</div>
+      <div class="lbl">продаж онлайн-школа</div>
+    </div>
+  </div>
+
+  <!-- AI 06 -->
+  <div class="card c11 rv">
+    <div class="cn">AI · 06</div>
+    <div class="ctitle" style="font-size:1rem;">Оцифровка процессов</div>
+    <p class="cdesc" style="font-size:13px;">Заявки, звонки, сделки — всё видно в реальном времени.</p>
+  </div>
+
+</div>
+</div>
+</div>
+
+<!-- ═══ CASES ═══ -->
+<div class="section" id="cases">
+<div class="sec-head rv">
+  <div class="sec-eyebrow">Кейсы</div>
+  <h2 class="sec-h">Когда система<br><span class="iris">даёт результат</span></h2>
+</div>
+<div class="bento-wrap">
+<div class="bento">
+
+  <!-- Case 1 - big -->
+  <div class="card c22 rv" style="display:flex;flex-direction:column;justify-content:space-between;min-height:260px;">
+    <div>
+      <div class="clabel"><span>Report · 01 · E-commerce</span><span style="color:var(--e)">↑</span></div>
+      <div style="font-size:clamp(4rem,8vw,7rem);font-weight:900;letter-spacing:-.06em;line-height:.85;" class="iris">+180%</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:6px;">заявок · CPL −42%</div>
+    </div>
+    <div>
+      <div class="ctitle" style="margin-top:16px;margin-bottom:8px;">Рост заявок для интернет-магазина</div>
+      <p class="cdesc" style="font-size:13px;">Пересобрали кампании, посадочные страницы, аналитику и структуру офферов.</p>
+      <div class="mini-chart" style="margin-top:16px;">
+        <div class="b" style="height:20%;"></div><div class="b" style="height:28%;"></div>
+        <div class="b" style="height:24%;"></div><div class="b" style="height:44%;"></div>
+        <div class="b" style="height:52%;"></div><div class="b" style="height:60%;"></div>
+        <div class="b" style="height:72%;"></div><div class="b" style="height:88%;"></div>
+        <div class="b" style="height:100%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Case 2 -->
+  <div class="card c21 rv" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
+    <div class="clabel"><span>Report · 02 · Недвижимость</span></div>
+    <div style="font-size:clamp(3rem,6vw,5rem);font-weight:900;letter-spacing:-.06em;" class="iris iris-slow">×2.4</div>
+    <div>
+      <div class="ctitle" style="font-size:1.1rem;margin-bottom:6px;">Упаковка и воронка для инвест-объекта</div>
+      <p class="cdesc" style="font-size:13px;">Презентация, лендинг, визуальная подача и воронка заявок.</p>
+    </div>
+  </div>
+
+  <!-- Case 3 -->
+  <div class="card c21 rv" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
+    <div class="clabel"><span>Report · 03 · Онлайн-школа</span></div>
+    <div style="font-size:clamp(3rem,6vw,5rem);font-weight:900;letter-spacing:-.06em;" class="iris">+220%</div>
+    <div>
+      <div class="ctitle" style="font-size:1.1rem;margin-bottom:6px;">Воронка продаж для онлайн-школы</div>
+      <p class="cdesc" style="font-size:13px;">Автоворонка, прогрев, контент и AI-ассистент. Нагрузка на менеджеров −70%.</p>
+    </div>
+  </div>
+
+  <!-- Solutions teaser -->
+  <div class="card c42 rv" style="display:flex;align-items:center;gap:40px;flex-wrap:wrap;min-height:100px;">
+    <div style="flex-shrink:0;">
+      <div class="sec-eyebrow" style="margin-bottom:8px;">10 решений</div>
+      <div style="font-size:clamp(1.4rem,2.5vw,2.2rem);font-weight:800;letter-spacing:-.03em;">Внедряйте отдельно<br>или соберите <span class="iris">в систему</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;flex:1;min-width:280px;">
+      <div style="padding:10px;background:var(--bg-h);border:1px solid var(--bd);border-radius:10px;font-size:11px;font-weight:600;">Стратегия</div>
+      <div style="padding:10px;background:var(--bg-h);border:1px solid var(--bd);border-radius:10px;font-size:11px;font-weight:600;">Брендинг</div>
+      <div style="padding:10px;background:var(--bg-h);border:1px solid var(--bd);border-radius:10px;font-size:11px;font-weight:600;">Сайты</div>
+      <div style="padding:10px;background:var(--bg-h);border:1px solid var(--bd);border-radius:10px;font-size:11px;font-weight:600;">Контекст</div>
+      <div style="padding:10px;background:var(--bg-h);border:1px solid var(--bd);border-radius:10px;font-size:11px;font-weight:600;">SEO</div>
+      <div style="padding:10px;background:var(--bg-h);border:1px solid var(--bd);border-radius:10px;font-size:11px;font-weight:600;">Таргет</div>
+      <div style="padding:10px;background:var(--bg-h);border:1px solid var(--bd);border-radius:10px;font-size:11px;font-weight:600;">CRM</div>
+      <div style="padding:10px;background:rgba(8,212,236,.07);border:1px solid rgba(8,212,236,.25);border-radius:10px;font-size:11px;font-weight:600;color:var(--e);">AI-боты</div>
+      <div style="padding:10px;background:var(--bg-h);border:1px solid var(--bd);border-radius:10px;font-size:11px;font-weight:600;">Автовор.</div>
+      <div style="padding:10px;background:var(--bg-h);border:1px solid var(--bd);border-radius:10px;font-size:11px;font-weight:600;">AI-контент</div>
+    </div>
+  </div>
+
+</div>
+</div>
+</div>
+
+<!-- ═══ METHOD ═══ -->
+<div class="section">
+<div class="sec-head rv">
+  <div class="sec-eyebrow">Метод работы</div>
+  <h2 class="sec-h">От диагностики до<br><span class="iris">стабильного роста</span></h2>
+</div>
+<div class="bento-wrap">
+<div class="bento bento-5">
+  <div class="card c11 card-method rv">
+    <div class="step-n">01</div>
+    <div><div class="ctitle">Диагностика</div><p class="cdesc" style="font-size:13px;">Рынок, аудитория, текущий маркетинг. Слабые места и точки роста.</p></div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-top:12px;">scan</div>
+  </div>
+  <div class="card c11 card-method rv">
+    <div class="step-n">02</div>
+    <div><div class="ctitle">Стратегия</div><p class="cdesc" style="font-size:13px;">Позиционирование, офферы, карта воронки, каналы, KPI, план.</p></div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-top:12px;">plan</div>
+  </div>
+  <div class="card c11 card-method rv" style="background:rgba(12,244,164,.03);">
+    <div class="step-n" style="color:rgba(12,244,164,.12);">03</div>
+    <div><div class="ctitle">Запуск</div><p class="cdesc" style="font-size:13px;">Сайт, контент, визуал и первые каналы привлечения.</p></div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--e);letter-spacing:.2em;text-transform:uppercase;margin-top:12px;">build</div>
+  </div>
+  <div class="card c11 card-method rv">
+    <div class="step-n">04</div>
+    <div><div class="ctitle">AI + Авто</div><p class="cdesc" style="font-size:13px;">CRM, аналитика, чат-боты, AI-продавцы и автоворонки.</p></div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-top:12px;">ai</div>
+  </div>
+  <div class="card c11 card-method rv">
+    <div class="step-n">05</div>
+    <div><div class="ctitle">Масштаб</div><p class="cdesc" style="font-size:13px;">Оптимизируем связки, усиливаем рабочие каналы, масштабируем.</p></div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-top:12px;">scale</div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ═══ WHY + TEAM ═══ -->
+<div class="section">
+<div class="bento-wrap">
+<div class="bento">
+
+  <!-- Why us header -->
+  <div class="card c41 rv" style="background:transparent;border-color:transparent;padding:0 0 4px 0;">
+    <div class="sec-eyebrow">Почему мы</div>
+    <h2 class="sec-h" style="font-size:clamp(1.8rem,3vw,2.8rem);">Системный подход вместо<br><span class="iris">хаоса разрозненных задач</span></h2>
+  </div>
+
+  <div class="card c11 rv"><div class="cn">01</div><div class="ctitle">Стратегия перед запуском</div><p class="cdesc" style="font-size:13px;">Не запускаем инструменты, пока не понятны рынок, аудитория, оффер и экономика.</p></div>
+  <div class="card c11 rv"><div class="cn">02</div><div class="ctitle">Full-cycle команда</div><p class="cdesc" style="font-size:13px;">Стратеги, маркетологи, дизайнеры, разработчики и AI-специалисты в одной логике.</p></div>
+  <div class="card c11 rv"><div class="cn">03</div><div class="ctitle">Фокус на продажах</div><p class="cdesc" style="font-size:13px;">Дизайн, реклама, AI и автоматизация — через бизнес-результат, не красоту.</p></div>
+  <div class="card c11 rv"><div class="cn">04</div><div class="ctitle">AI внутри процессов</div><p class="cdesc" style="font-size:13px;">AI для анализа, контента, коммуникаций и ускорения — не для вида.</p></div>
+  <div class="card c11 rv"><div class="cn">05</div><div class="ctitle">Прозрачная аналитика</div><p class="cdesc" style="font-size:13px;">Контроль заявок, источников и конверсий в реальном времени.</p></div>
+  <div class="card c31 rv" style="background:rgba(8,212,236,.03);border-color:rgba(8,212,236,.12);display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+    <div style="font-size:clamp(1.3rem,2.5vw,2rem);font-weight:800;letter-spacing:-.03em;max-width:400px;">Бизнесы приходят за <span class="iris">системой роста</span>, а не за разовыми задачами</div>
+  </div>
+
+</div>
+</div>
+</div>
+
+<!-- ═══ TEAM ═══ -->
+<div class="section" id="team">
+<div class="sec-head rv">
+  <div class="sec-eyebrow">Команда</div>
+  <h2 class="sec-h">Специалисты,<br><span class="iris">не один подрядчик</span></h2>
+</div>
+<div class="bento-wrap">
+<div class="bento">
+  <div class="card c11 card-role rv"><div class="role-glyph">ST</div><div class="role-title">Стратег</div><div class="role-area">Стратегия и бизнес-логика</div></div>
+  <div class="card c11 card-role rv"><div class="role-glyph">PM</div><div class="role-title">Project-менеджер</div><div class="role-area">Процесс, сроки, качество</div></div>
+  <div class="card c11 card-role rv"><div class="role-glyph">PF</div><div class="role-title">Performance</div><div class="role-area">Реклама, CPL, ROI</div></div>
+  <div class="card c11 card-role rv"><div class="role-glyph">MK</div><div class="role-title">Маркетолог</div><div class="role-area">Воронка, гипотезы</div></div>
+  <div class="card c11 card-role rv"><div class="role-glyph">DS</div><div class="role-title">Дизайнер</div><div class="role-area">Упаковка и интерфейсы</div></div>
+  <div class="card c11 card-role rv"><div class="role-glyph">DV</div><div class="role-title">Разработчик</div><div class="role-area">Сайты, интеграции</div></div>
+  <div class="card c11 card-role rv" style="border-color:rgba(8,212,236,.2);background:rgba(8,212,236,.04);"><div class="role-glyph" style="border-color:rgba(8,212,236,.3);background:rgba(8,212,236,.08);">AI</div><div class="role-title" style="color:var(--e);">AI-специалист</div><div class="role-area">Автоматизация, боты</div></div>
+  <div class="card c11 card-role rv"><div class="role-glyph">AN</div><div class="role-title">Аналитик</div><div class="role-area">Дашборды, отчёты</div></div>
+</div>
+</div>
+</div>
+
+<!-- ═══ CTA + FORM ═══ -->
+<div class="section" id="contact">
+<div class="sec-head rv">
+  <div class="sec-eyebrow">Диагностика проекта</div>
+  <h2 class="sec-h">Разберём ваш проект<br>и <span class="iris">покажем, где рост</span></h2>
+</div>
+<div class="bento-wrap">
+<div class="bento">
+
+  <!-- What we do in diagnosis -->
+  <div class="card c22 rv" style="display:flex;flex-direction:column;gap:16px;justify-content:center;">
+    <p style="font-size:clamp(15px,1.5vw,17px);color:var(--muted);line-height:1.7;margin-bottom:8px;">На первом созвоне изучим ситуацию, определим слабые места и предложим понятную логику следующих шагов.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--bg-h);border:1px solid var(--bd);border-radius:12px;">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--e);flex-shrink:0;margin-top:1px;">01</span>
+        <div><div style="font-size:14px;font-weight:600;margin-bottom:4px;">Разберём текущую ситуацию</div><div style="font-size:12px;color:var(--muted);">Сайт, реклама, воронка, аналитика, упаковка и продажи.</div></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--bg-h);border:1px solid var(--bd);border-radius:12px;">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--e);flex-shrink:0;margin-top:1px;">02</span>
+        <div><div style="font-size:14px;font-weight:600;margin-bottom:4px;">Найдём слабые места</div><div style="font-size:12px;color:var(--muted);">Где теряются заявки, бюджет и конверсия.</div></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--bg-h);border:1px solid var(--bd);border-radius:12px;">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--e);flex-shrink:0;margin-top:1px;">03</span>
+        <div><div style="font-size:14px;font-weight:600;margin-bottom:4px;">Предложим следующий шаг</div><div style="font-size:12px;color:var(--muted);">Стратегия, трафик, CRM, AI или комплексная система.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div class="card c22 card-form rv">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:20px;display:flex;justify-content:space-between;">
+      <span style="color:var(--e);">Diagnostic · K01</span>
+      <span>secure</span>
+    </div>
+    <div id="form-inner">
+      <div class="ff"><label>Имя *</label><input id="fn" placeholder="Как обращаться"></div>
+      <div class="ff"><label>Компания</label><input id="fc" placeholder="Название компании"></div>
+      <div class="ff"><label>Задача *</label><textarea id="ft" rows="3" placeholder="Коротко о ситуации"></textarea></div>
+      <div class="ff"><label>Контакт *</label><input id="fct" placeholder="Telegram / телефон"></div>
+      <button class="btn-submit" onclick="submitF()">Получить диагностику →</button>
+      <p style="font-size:11px;color:var(--dim);text-align:center;margin-top:10px;">Без рассылок. Только по вашему запросу.</p>
+    </div>
+    <div id="form-ok" style="display:none;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:20px;">
+      <div style="width:48px;height:48px;border-radius:50%;background:rgba(12,244,164,.1);border:1px solid rgba(12,244,164,.35);display:flex;align-items:center;justify-content:center;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 12l5 5 11-11" stroke="#0CF4A4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div style="font-size:20px;font-weight:700;">Заявка отправлена</div>
+      <p style="font-size:14px;color:var(--muted);">Свяжемся в течение рабочего дня.</p>
+    </div>
+  </div>
+
+</div>
+</div>
+</div>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="foot">
+    <div>
+      <div class="foot-logo">KARABSKY <span style="color:var(--muted)">LAB</span></div>
+      <div class="foot-copy" style="margin-top:8px;">© <span id="yr"></span> · Системы роста</div>
+    </div>
+    <div class="foot-links">
+      <a href="#arch">Система</a>
+      <a href="#ai">AI</a>
+      <a href="#cases">Кейсы</a>
+      <a href="#contact">Контакт</a>
+    </div>
+    <div class="foot-copy">Стратегия · Данные · AI · Рост</div>
+  </div>
+</footer>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+/* ═══════════════════════════════════════════════
+   HERO CANVAS — iridescent orb + orbital rings + particles
+═══════════════════════════════════════════════ */
+(function(){
+  var cv=document.getElementById('hero-cv');
+  if(!cv)return;
+  var ctx=cv.getContext('2d'),W=0,H=0,t=0;
+  var pts=[];
+  var rings=[
+    {a:0,   da:0.0014,rx:.22,ry:.09,tilt:-.30,op:.28},
+    {a:1.2, da:0.0009,rx:.32,ry:.14,tilt: .22,op:.20},
+    {a:2.5, da:0.0006,rx:.45,ry:.19,tilt:-.14,op:.13},
+  ];
+  function resize(){
+    W=cv.width=innerWidth; H=cv.height=innerHeight;
+    pts=Array.from({length:70},function(){return{
+      x:Math.random()*W,y:Math.random()*H,
+      vx:(Math.random()-.5)*.28,vy:-(0.025+Math.random()*.07),
+      sz:.4+Math.random()*1.4,op:.04+Math.random()*.14,ph:Math.random()*Math.PI*2
+    };});
+  }
+  window.addEventListener('resize',resize,{passive:true}); resize();
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    var cx=W*.50,cy=H*.44,rr=Math.min(W,H)*.13;
+    var pa=(Math.sin(t*.016)+1)*.5, ps=1+pa*.09, po=.45+pa*.42;
+    // outer halos
+    [[rr*5.5,.12],[rr*3.,.22],[rr*1.4,.5]].forEach(function(d){
+      var g=ctx.createRadialGradient(cx,cy,0,cx,cy,d[0]*ps);
+      var op=po*d[1];
+      /* colour cycles with iris */
+      var hue=((t*.12)%360);
+      g.addColorStop(0,'rgba(12,244,164,'+op+')');
+      g.addColorStop(.4,'rgba(8,212,236,'+(op*.4)+')');
+      g.addColorStop(1,'rgba(200,222,255,0)');
+      ctx.beginPath();ctx.arc(cx,cy,d[0]*ps,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+    });
+    // core
+    var cg=ctx.createRadialGradient(cx,cy,0,cx,cy,rr*.7*ps);
+    cg.addColorStop(0,'rgba(230,255,252,'+(po*.65)+')');
+    cg.addColorStop(.35,'rgba(12,244,164,'+(po*.28)+')');
+    cg.addColorStop(1,'rgba(8,212,236,0)');
+    ctx.beginPath();ctx.arc(cx,cy,rr*.7*ps,0,Math.PI*2);ctx.fillStyle=cg;ctx.fill();
+    // rings
+    rings.forEach(function(r){
+      r.a+=r.da;
+      ctx.save();ctx.translate(cx,cy);
+      ctx.beginPath();ctx.ellipse(0,0,r.rx*W,r.ry*H,r.a+r.tilt,0,Math.PI*2);
+      /* iridescent stroke */
+      var sg=ctx.createLinearGradient(-r.rx*W,0,r.rx*W,0);
+      sg.addColorStop(0,'rgba(12,244,164,0)');
+      sg.addColorStop(.3,'rgba(12,244,164,'+r.op+')');
+      sg.addColorStop(.5,'rgba(8,212,236,'+(r.op*1.3)+')');
+      sg.addColorStop(.7,'rgba(200,222,255,'+r.op+')');
+      sg.addColorStop(1,'rgba(12,244,164,0)');
+      ctx.strokeStyle=sg;ctx.lineWidth=1;ctx.stroke();
+      ctx.restore();
+    });
+    // particles
+    pts.forEach(function(p){
+      p.x+=p.vx+Math.sin(t*.0006+p.ph)*.03;p.y+=p.vy;
+      if(p.y<-4){p.y=H+4;p.x=Math.random()*W;}
+      if(p.x<-4)p.x=W+4; if(p.x>W+4)p.x=-4;
+      var op=p.op*(0.65+.35*Math.sin(t*.001+p.ph));
+      ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,Math.PI*2);
+      ctx.fillStyle='rgba(200,240,255,'+op+')';ctx.fill();
+    });
+    t++;requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+/* ═══════════════════════════════════════════════
+   ATMOSPHERE — dust + light rays
+═══════════════════════════════════════════════ */
+(function(){
+  var cv=document.getElementById('atm-cv');
+  if(!cv)return;
+  var ctx=cv.getContext('2d'),W=0,H=0,t=0;
+  var dust=[],fogs=[
+    {y:.25,h:.14,op:.022,tt:0,spd:.000065},
+    {y:.60,h:.16,op:.018,tt:2,spd:-.000048},
+    {y:.88,h:.13,op:.020,tt:4,spd:.000040},
+  ],rays=[
+    {a:-.55,w:5.5,len:.88,op:.025,spd:.000072,bph:0},
+    {a: .30,w:3.0,len:.70,op:.016,spd:-.000055,bph:1.4},
+    {a: .90,w:6.5,len:.92,op:.030,spd:.000044,bph:2.9},
+  ];
+  function resize(){
+    W=cv.width=innerWidth;H=cv.height=innerHeight;
+    dust=Array.from({length:80},function(){return{
+      x:Math.random()*W,y:Math.random()*H,
+      sz:.3+Math.random()*.9,vx:(Math.random()-.5)*.09,
+      vy:-(0.016+Math.random()*.065),
+      op:.03+Math.random()*.08,ph:Math.random()*Math.PI*2
+    };});
+  }
+  window.addEventListener('resize',resize,{passive:true});resize();
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    var cx=W*.50,cy=H*.44;
+    // fog
+    fogs.forEach(function(f){
+      f.tt+=f.spd;
+      var fy=(f.y+Math.sin(f.tt)*.015)*H,fh=f.h*H;
+      var g=ctx.createLinearGradient(0,fy-fh*.5,0,fy+fh*.5);
+      g.addColorStop(0,'rgba(6,8,16,0)');g.addColorStop(.5,'rgba(10,15,28,'+f.op+')');g.addColorStop(1,'rgba(6,8,16,0)');
+      ctx.fillStyle=g;ctx.fillRect(0,fy-fh*.5,W,fh);
+    });
+    // rays from hero canvas center
+    rays.forEach(function(r){
+      r.a+=r.spd;
+      var br=(Math.sin(t*.0011+r.bph)+1)*.5,op=r.op*(.3+br*.7);
+      var len=r.len*Math.max(W,H),half=(r.w*Math.PI/180)*.5;
+      ctx.save();ctx.translate(cx,cy);ctx.rotate(r.a);
+      var g=ctx.createLinearGradient(0,0,len,0);
+      g.addColorStop(0,'rgba(12,244,164,'+op+')');
+      g.addColorStop(.07,'rgba(8,212,236,'+(op*.55)+')');
+      g.addColorStop(.3,'rgba(200,222,255,'+(op*.15)+')');
+      g.addColorStop(1,'rgba(200,222,255,0)');
+      ctx.beginPath();ctx.moveTo(0,0);
+      ctx.lineTo(len,-Math.tan(half)*len);ctx.lineTo(len,Math.tan(half)*len);ctx.closePath();
+      ctx.fillStyle=g;ctx.fill();ctx.restore();
+    });
+    // dust
+    dust.forEach(function(d){
+      d.x+=d.vx+Math.sin(t*.00055+d.ph)*.025;d.y+=d.vy;
+      if(d.y<-2){d.y=H+2;d.x=Math.random()*W;}
+      if(d.x<-2)d.x=W+2;if(d.x>W+2)d.x=-2;
+      var op=d.op*(.65+.35*Math.sin(t*.0008+d.ph));
+      ctx.beginPath();ctx.arc(d.x,d.y,d.sz,0,Math.PI*2);
+      ctx.fillStyle='rgba(180,220,255,'+op+')';ctx.fill();
+    });
+    t++;requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+
+
+// ── YEAR ──────────────────────────────────
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+// ── PROGRESS BAR ──────────────────────────
+window.addEventListener('scroll',function(){
+  var p=scrollY/(document.documentElement.scrollHeight-innerHeight)*100;
+  document.getElementById('pgb').style.width=p+'%';
+  document.getElementById('nav').classList.toggle('scrolled',scrollY>50);
+},{passive:true});
+
+// ── CURSOR ────────────────────────────────
+var hasMouse=window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+if(hasMouse){
+  var cd=document.getElementById('cd'),cr=document.getElementById('cr');
+  var mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+  window.addEventListener('mousemove',function(e){
+    mx=e.clientX;my=e.clientY;
+    gsap.to(cd,{x:mx,y:my,duration:.05,ease:'none',overwrite:true});
+  },{passive:true});
+  (function loop(){rx+=(mx-rx)*.11;ry+=(my-ry)*.11;gsap.set(cr,{x:rx,y:ry});requestAnimationFrame(loop);})();
+  document.querySelectorAll('button,a,.card').forEach(function(el){
+    el.addEventListener('mouseenter',function(){
+      gsap.to(cr,{width:40,height:40,borderColor:'rgba(8,212,236,.55)',duration:.25});
+      gsap.to(cd,{scale:.5,duration:.2});
+    });
+    el.addEventListener('mouseleave',function(){
+      gsap.to(cr,{width:28,height:28,borderColor:'rgba(8,212,236,.3)',duration:.3});
+      gsap.to(cd,{scale:1,duration:.2});
+    });
+  });
+}
+
+// ── HERO ENTRANCE ─────────────────────────
+gsap.timeline()
+  .to('.hero-label',{opacity:1,y:0,duration:.7,ease:'power3.out'},'.3')
+  .to('.hero-h',{opacity:1,y:0,duration:.9,ease:'power3.out'},'.5')
+  .to('.hero-sub',{opacity:1,y:0,duration:.8,ease:'power3.out'},'.7')
+  .to('.hero-btns',{opacity:1,y:0,duration:.7,ease:'power3.out'},'.85')
+  .to('.hero-stats',{opacity:1,y:0,duration:.7,ease:'power3.out'},'1.0');
+
+// ── SECTION HEADERS ───────────────────────
+gsap.utils.toArray('.sec-head.rv').forEach(function(el){
+  gsap.to(el,{opacity:1,y:0,duration:.8,ease:'power3.out',
+    scrollTrigger:{trigger:el,start:'top 88%'}});
+});
+
+// ── BENTO CARDS — clip-path reveal ────────
+gsap.utils.toArray('.card.rv').forEach(function(card,i){
+  var col=i%4;
+  gsap.fromTo(card,
+    {clipPath:'inset(0 0 100% 0)', opacity:0},
+    {clipPath:'inset(0 0 0% 0)', opacity:1,
+     duration:.65, ease:'power3.out',
+     delay:col*.08,
+     scrollTrigger:{
+       trigger:card, start:'top 92%',
+       toggleActions:'play none none reverse'
+     }
+    }
+  );
+});
+
+// ── 3D CARD TILT ──────────────────────────
+if(hasMouse){
+  document.querySelectorAll('.card').forEach(function(card){
+    card.addEventListener('mousemove',function(e){
+      var r=card.getBoundingClientRect();
+      var x=(e.clientX-r.left)/r.width-.5;
+      var y=(e.clientY-r.top)/r.height-.5;
+      gsap.to(card,{rotateX:-y*6,rotateY:x*6,scale:1.012,
+        transformPerspective:900,duration:.28,ease:'power2.out',overwrite:true});
+    });
+    card.addEventListener('mouseleave',function(){
+      gsap.to(card,{rotateX:0,rotateY:0,scale:1,
+        duration:.5,ease:'power2.out',overwrite:true});
+    });
+  });
+}
+
+// ── MAGNETIC BUTTONS ──────────────────────
+if(hasMouse){
+  document.querySelectorAll('.btn-primary,.btn-sec,.nav-cta,.btn-submit').forEach(function(btn){
+    btn.addEventListener('mousemove',function(e){
+      var r=btn.getBoundingClientRect();
+      var x=(e.clientX-r.left-r.width*.5)/r.width;
+      var y=(e.clientY-r.top-r.height*.5)/r.height;
+      gsap.to(btn,{x:x*9,y:y*4,duration:.28,ease:'power2.out',overwrite:true});
+    });
+    btn.addEventListener('mouseleave',function(){
+      gsap.to(btn,{x:0,y:0,duration:.6,ease:'elastic.out(1.05,.5)',overwrite:true});
+    });
+  });
+}
+
+// ── ANIMATED CHART BARS ───────────────────
+ScrollTrigger.create({
+  trigger:'.mini-chart',start:'top 85%',once:true,
+  onEnter:function(){
+    document.querySelectorAll('.mini-chart .b').forEach(function(b,i){
+      setTimeout(function(){ b.style.height=b.style.height; },i*60);
+    });
+  }
+});
+
+// ── FORM ──────────────────────────────────
+function submitF(){
+  var ok=['fn','fct','ft'].every(function(id){
+    var el=document.getElementById(id);
+    if(!el.value.trim()){el.style.borderColor='rgba(248,113,113,.5)';return false;}
+    el.style.borderColor='';return true;
+  });
+  if(!ok)return;
+  document.getElementById('form-inner').style.display='none';
+  document.getElementById('form-ok').style.display='flex';
+}
+
+
+/* ═══ PINNED SECTION REVEALS ═══ */
+[
+  {id:'rv-arch', line:'el-arch'},
+  {id:'rv-ai',   line:'el-ai'},
+  {id:'rv-cases',line:'el-cases'},
+].forEach(function(s){
+  var el=document.getElementById(s.id);
+  var ln=document.getElementById(s.line);
+  if(!el) return;
+  var trig=el.closest ? el.parentElement.nextElementSibling : null;
+  ScrollTrigger.create({
+    trigger:el.parentElement,
+    start:'top 80%',
+    onEnter:function(){
+      gsap.timeline()
+        .to(el,{opacity:1,scale:1,duration:.8,ease:'power3.out'})
+        .to(ln,{width:'180px',duration:.6,ease:'power2.out'},'.4');
+    },
+    onLeaveBack:function(){
+      gsap.to(el,{opacity:0,scale:.95,duration:.4});
+      if(ln) gsap.to(ln,{width:0,duration:.3});
+    }
+  });
+});
+
+/* ═══ SEC-HEAD WORD SLIDE UP ═══ */
+document.querySelectorAll('.sec-h').forEach(function(h){
+  /* split text nodes only, preserve .iris spans */
+  function splitNode(node){
+    if(node.nodeType===3){ // text node
+      var words=node.textContent.split(/(\s+)/);
+      var frag=document.createDocumentFragment();
+      words.forEach(function(w){
+        if(/^\s+$/.test(w)){
+          frag.appendChild(document.createTextNode(w));
+        } else if(w.length){
+          var ww=document.createElement('span');
+          ww.className='ww';
+          var wd=document.createElement('span');
+          wd.className='wd';
+          wd.textContent=w;
+          ww.appendChild(wd);
+          frag.appendChild(ww);
+        }
+      });
+      node.parentNode.replaceChild(frag,node);
+    } else if(node.nodeType===1 && node.childNodes){
+      Array.from(node.childNodes).forEach(splitNode);
+    }
+  }
+  splitNode(h);
+  gsap.fromTo(h.querySelectorAll('.wd'),
+    {y:'105%',opacity:0},
+    {y:'0%',opacity:1,stagger:.06,duration:.7,ease:'power3.out',
+     scrollTrigger:{trigger:h,start:'top 88%'}}
+  );
+});
+
+ScrollTrigger.refresh();
+</script>
+</body>
+</html>
